@@ -65,6 +65,76 @@ export const CashinRequest = async (req, res) => {
     }
 };
 
+export const cashOutByUser = async (req, res) => {
+    try {
+      const { amount, agentId, email, pin } = req.body;
+      const cashOutAmount = Number(amount); // Ensure numeric value
+  
+      // Validate input
+      if (!cashOutAmount || cashOutAmount <= 0) {
+        return res.status(400).json({ message: "Invalid cash-out amount" });
+      }
+  
+      // Find the user
+      const user = await User.findOne({ email });
+      if (!user) return res.status(404).json({ message: "User not found" });
+  
+      // Validate PIN
+      if (user.pin !== pin) return res.status(400).json({ message: "Invalid PIN" });
+  
+      // Find the agent
+      const agent = await User.findById(agentId);
+      if (!agent || agent.accountType !== "Agent") {
+        return res.status(404).json({ message: "Agent not found or invalid" });
+      }
+  
+      // Get the admin
+      const admin = await User.findOne({ accountType: "Admin" });
+      if (!admin) return res.status(500).json({ message: "Admin account not found" });
+  
+      // Calculate commissions
+      const agentCommission = (cashOutAmount * 1) / 100; 
+      const adminCommission = (cashOutAmount * 0.5) / 100; 
+      const totalAmount = cashOutAmount + agentCommission + adminCommission; // Total bill
+  
+      // Check if user has enough balance
+      if (user.balance < totalAmount) {
+        return res.status(400).json({ message: "Insufficient balance", totalBill: totalAmount });
+      }
+  
+      // Perform balance updates
+      user.balance -= totalAmount; 
+      agent.balance += agentCommission; 
+      admin.balance += adminCommission; 
+  
+      // Save updated balances
+      await user.save();
+      await agent.save();
+      await admin.save();
+  
+      // Log the transaction (Optional)
+      const transaction = new CashTransaction({
+        senderId: user._id,
+        receiverId: agent._id,
+        amount: cashOutAmount,
+        status: "Success",
+        type: "CashOut",
+        commission: { agent: agentCommission, admin: adminCommission },
+      });
+      await transaction.save();
+  
+      // Response
+      res.status(200).json({
+        message: `Cash-out successful! Total bill ${totalAmount} TK`
+      });
+  
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  };
+  
+
 export const approveCashinRequest = async (req, res) => {
     const { id } = req.params;
     const { pin, Id } = req.body;
