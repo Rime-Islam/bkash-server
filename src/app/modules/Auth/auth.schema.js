@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     mobile: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     nid: { type: String, required: true, unique: true },
-    accountType: { type: String, enum: ["User", "Request", "Agent", "Admin"], required: true },
+    accountType: { type: String, enum: ["User", "Request", "Agent", "Admin", "Rejected"], required: true },
     balance: { type: Number, default: 0 },
     status: { type: String, default: 'user' },
   },

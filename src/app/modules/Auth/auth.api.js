@@ -74,6 +74,21 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+export const getAgents = async (req, res) => {
+  try {
+    const agents = await User.find({ accountType: 'Agent' }).select('name email _id');
+
+    if (!agents || agents.length === 0) {
+      return res.status(404).json({ message: 'No agents found' });
+    }
+
+    res.json(agents); 
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error', error });
+  }
+};
+
 export const blockUsers = async (req, res) => {
   try {
       const user = await User.findByIdAndUpdate(
@@ -90,3 +105,60 @@ export const blockUsers = async (req, res) => {
       res.status(500).json({ message: "Server error", error });
   }
 }
+
+export const getRequestedUsers = async (req, res) => {
+  try {
+    const users = await User.find(
+      { accountType: { $nin: ["Admin", "User"] } }, 
+      "-pin" 
+  );
+    if (!users.length) {
+      return res.status(404).json({ message: "No requested users found" });
+    }
+
+    res.json({ 
+      message: "Requested users retrieved successfully", 
+      users 
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+export const acceptUser = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const user = await User.findByIdAndUpdate(
+        id, 
+        { 
+          accountType: "Agent",
+          balance: 100000
+         }, { new: true });
+
+      if (!user) {
+          return res.status(404).json({ message: "User not found" });
+      }
+if(user){
+
+}
+      res.json({ message: "User accepted successfully", user });
+  } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+export const rejectUser = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const user = await User.findByIdAndUpdate(id, { accountType: "Rejected" }, { new: true });
+
+      if (!user) {
+          return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "User rejected successfully", user });
+  } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
