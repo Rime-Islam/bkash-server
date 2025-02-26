@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 // Define the CashInRequest schema
 const cashInRequestSchema = new mongoose.Schema(
@@ -38,8 +38,39 @@ const cashInRequestSchema = new mongoose.Schema(
   }
 );
 
+// Define the CashTransaction schema (new schema)
+const cashTransactionSchema = new mongoose.Schema(
+  {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Referring to the 'User' model for the sender
+      required: true,
+    },
+    receiverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Referring to the 'User' model for the receiver
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: 1, // Ensure a positive amount
+    },
+    status: {
+      type: String,
+      enum: ['Success', 'Failed', 'Pending'],
+      default: 'Pending', // Default status is 'Pending'
+    },
+    transactionDate: {
+      type: Date,
+      default: Date.now, // Automatically set to current date/time
+    },
+  },
+  { timestamps: true } // Automatically add createdAt and updatedAt fields
+);
 
-// Create and export the CashInRequest model
+// Create and export the Cash and CashTransaction models
 const Cash = mongoose.model('Cash', cashInRequestSchema);
+const CashTransaction = mongoose.model('CashTransaction', cashTransactionSchema);
 
-export default Cash;
+export { Cash, CashTransaction };

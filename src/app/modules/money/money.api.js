@@ -1,5 +1,6 @@
-import Cash from "./money.schema.js";
+
 import User from "../Auth/auth.schema.js";
+import { Cash, CashTransaction } from "./money.schema.js";
 
 export const CashinRequest = async (req, res) => {
     try {
@@ -103,6 +104,61 @@ export const approveCashinRequest = async (req, res) => {
       await cashRequest.save();
   
       res.status(200).json({ message: "Cash-in request approved successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  };
+
+  export const sendMoney = async (req, res) => {
+    const { balance, receiverId, pin, senderId } = req.body;
+  
+    try {
+      const sender = await User.findById(senderId);
+  
+      if (!sender) {
+        return res.status(404).json({ message: "Sender not found" });
+      }
+  
+      if (sender.pin !== pin) {
+        return res.status(400).json({ message: "Invalid PIN" });
+      }
+  
+      const receiver = await User.findById(receiverId);
+  
+      if (!receiver) {
+        return res.status(404).json({ message: "Receiver not found" });
+      }
+  
+      if (sender.balance < balance) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+  
+      sender.balance -= balance;
+      receiver.balance += Number(balance);
+  
+      if (balance > 100) {
+        const admin = await User.findOne({ accountType: 'Admin' });  // Assuming the admin has accountType as 'Admin'
+        if (admin) {
+          admin.balance += 5;
+          await admin.save();
+        }
+      }
+  
+      await sender.save();
+      await receiver.save();
+  
+     
+      const transaction = new CashTransaction({
+        senderId,
+        receiverId,
+        amount: balance,
+        status: 'Success',
+      });
+      await transaction.save();
+
+      res.status(200).json({ message: "Money sent successfully" });
+  
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Internal Server Error", error: error.message });

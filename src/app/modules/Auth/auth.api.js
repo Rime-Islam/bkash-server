@@ -76,7 +76,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getAgents = async (req, res) => {
   try {
-    const agents = await User.find({ accountType: 'Agent' }).select('name email _id');
+    const agents = await User.find({ accountType: 'Agent' }).select('name _id');
 
     if (!agents || agents.length === 0) {
       return res.status(404).json({ message: 'No agents found' });
@@ -88,6 +88,25 @@ export const getAgents = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error', error });
   }
 };
+
+export const getUsers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const users = await User.find({ 
+      accountType: 'User', 
+      _id: { $ne: id } 
+    }).select('name _id');
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    res.json(users); 
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error', error });
+  }
+};
+
 
 export const blockUsers = async (req, res) => {
   try {
