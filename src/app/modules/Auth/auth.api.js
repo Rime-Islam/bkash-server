@@ -11,7 +11,6 @@ export const register = async (req, res) => {
     const existingUser = await User.findOne({
       $or: [{ mobile }, { email }, { nid }],
     });
-
     if (existingUser)
         {
             return res.status(400).json({ message: "User already exists! Please check your NID, email or PIN " });
@@ -42,15 +41,52 @@ export const login = async (req, res) => {
 
     const user = await User.findOne({ $or: [{ mobile: identifier }, { email: identifier }] });
 
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
 
-   
+    if (user.pin !== pin) {
+      return res.status(500).json({ message: "Invalid PIN. Please try again." });
+    }
+
     const token = jwt.sign({ id: user._id, accountType: user.accountType }, config.jwt_access_token, {
       expiresIn: "1d",
     });
 
     res.json({ message: "Login successful", token, user });
+
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", error });
   }
 };
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({ accountType: { $ne: "Admin" } }, "-pin");
+    
+    if (!users.length) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    res.json({ message: "Users retrieved successfully", users });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+export const blockUsers = async (req, res) => {
+  try {
+      const user = await User.findByIdAndUpdate(
+        req.params.id, 
+        { status: "Blocked" },
+         { new: true });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "User blocked successfully", user });
+  } catch (error) {
+      res.status(500).json({ message: "Server error", error });
+  }
+}
