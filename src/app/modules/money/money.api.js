@@ -134,6 +134,39 @@ export const cashOutByUser = async (req, res) => {
     }
   };
   
+  export const getTransactionsBySender = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Fetch transactions where the senderId matches
+      const transactions = await CashTransaction.find({ id });
+  
+      if (!transactions || transactions.length === 0) {
+        return res.status(404).json({ message: "No transactions found for this sender." });
+      }
+  
+      res.status(200).json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  };
+
+  export const getAllTransactions = async (req, res) => {
+    try {
+      // Fetch all transactions sorted by date (latest first)
+      const transactions = await CashTransaction.find();
+  
+      if (!transactions || transactions.length === 0) {
+        return res.status(404).json({ message: "No transactions found." });
+      }
+  
+      res.status(200).json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  };
 
 export const approveCashinRequest = async (req, res) => {
     const { id } = req.params;

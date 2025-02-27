@@ -60,6 +60,26 @@ export const login = async (req, res) => {
   }
 };
 
+export const getTotalBalance = async (req, res) => {
+  try {
+    // Aggregate total balance of all users
+    const totalBalance = await User.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$balance" },
+        },
+      },
+    ]);
+    const total = totalBalance.length > 0 ? totalBalance[0].totalAmount : 0;
+
+    res.status(200).json({ totalBalance: total });
+  } catch (error) {
+    console.error("Error fetching total balance:", error);
+    res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({ accountType: { $ne: "Admin" } }, "-pin");
@@ -74,8 +94,31 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+
 export const getAgents = async (req, res) => {
   try {
+ 
     const agents = await User.find({ accountType: 'Agent' }).select('name _id');
 
     if (!agents || agents.length === 0) {
